@@ -42,6 +42,8 @@ INSTALLED_APPS = [
 	'sp_goods.apps.SpGoodsConfig',  # 商品模块
 	'sp_order.apps.SpOrderConfig',  # 购物模块
 	'sp_car.apps.SpCarConfig',  # 订单模块
+	'ckeditor',  # 添加ckeditor富文本编辑器
+	'ckeditor_uploader',  # 添加ckeditor富文本编辑器文件上传部件
 ]
 
 MIDDLEWARE = [
@@ -129,6 +131,9 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
 	os.path.join(BASE_DIR, "static"),
 ]
+# 这条主要是上线的时候收集静态文件的
+# STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
 
 # 文件上传设置
 MEDIA_URL = "/static/media/"
@@ -157,3 +162,13 @@ SESSION_CACHE_ALIAS = "default"
 # 配置登录URL地址
 LOGIN_URL = "/user/login/"
 
+# 配置ckeditor
+CKEDITOR_UPLOAD_PATH = "uploads/"  # 配置上传目录
+
+
+# 配置文本框样式
+CKEDITOR_CONFIGS = {
+	"default":{
+		"toolbar":"full",
+	},
+}

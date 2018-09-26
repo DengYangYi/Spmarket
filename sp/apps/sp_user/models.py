@@ -56,7 +56,7 @@ class Users(BaseModel):
 								)
 
 	class Meta:
-		verbose_name = '用户管理'
+		verbose_name = '用户资料'
 		verbose_name_plural = verbose_name
 
 	def __str__(self):
@@ -67,3 +67,9 @@ class Users(BaseModel):
 
 class TestImageModel(models.Model):
 	head = models.ImageField(upload_to="user/%Y%m/%d", verbose_name="用户的头像")
+	class Meta:
+		verbose_name = '用户头像'
+		verbose_name_plural = verbose_name
+
+	def __str__(self):
+		return self.phone

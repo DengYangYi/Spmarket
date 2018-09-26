@@ -15,8 +15,14 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
+from django.views.decorators.cache import cache_page
+
+from sp_goods.views import IndexView
 
 urlpatterns = [
 	url(r'^admin/', admin.site.urls),
+	url(r'^ckeditor/', include("ckeditor_uploader.urls")),
+	url(r'^$', cache_page(24 * 3600)(IndexView.as_view()), name='index'),
 	url(r'^user/', include("sp_user.urls", namespace="sp_user")),  # 绑定 用户模块子路由
+	url(r'^goods/', include("sp_goods.urls", namespace="sp_goods")),
 ]

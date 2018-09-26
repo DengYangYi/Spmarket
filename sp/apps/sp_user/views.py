@@ -100,6 +100,19 @@ class InfoView(BaseVerifyView):
 		# 3. 响应
 		return redirect(reverse("sp_user:center"))
 
+# 个人资料修改
+
+# 个人中心头像上传
+def upload_head(request):
+	if request.method == "POST":
+		user_id = request.session.get("ID")  # 获取用户id
+		user = Users.objects.get(pk=user_id)  # 获取用户对象
+		user.head = request.FILES['file']  # 通过键file获取对应文件方向变化那你看了
+		user.save()
+		return JsonResponse({"error": 0})
+	else:
+		return JsonResponse({"error": 1})
+
 
 # 退出功能
 class LogoutView(View):
@@ -129,7 +142,7 @@ class SendCodeView(View):
 
 		# 生成随机验证码
 		import random
-		random_code = "".join([str(random.randint(0, 9)) for _ in range(4)])  #0~9随机生成4个
+		random_code = "".join([str(random.randint(0, 9)) for _ in range(4)])  # 0~9随机生成4个
 
 		# 开发自己模拟效果
 		print("----code : {}----".format(random_code))

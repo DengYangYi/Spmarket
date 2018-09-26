@@ -1,6 +1,13 @@
 from django.contrib import admin
+from django.contrib.admin import ModelAdmin
+from sp_user.models import TestImageModel, Users
 
-# Register your models here.
-from sp_user.models import TestImageModel
+@admin.register(Users)
+class UsersAdmin(ModelAdmin):
+	# 用户资料
+	pass
 
-admin.site.register(TestImageModel)
+@admin.register(TestImageModel)
+class UsersAdmin(ModelAdmin):
+	# 用户头像
+	pass
