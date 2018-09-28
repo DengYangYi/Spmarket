@@ -1,159 +1,161 @@
+import random
+import re
 import uuid
-
-from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render, redirect
-from django.urls import reverse
-# from django.utils.decorators import method_decorator
+from django.shortcuts import render, redirect, reverse
 from django.views import View
-
 from db.base_view import BaseVerifyView
-from sp_user.forms import RegisterForm, LoginForm
-from sp_user.helper import verify_login_required, send_sms
-from sp_user.models import Users
+from sp_user.forms import RegisterForm, LoginForm, UserChangeForm
+from sp_user.helper import check_phone_pwd, check_is_login, send_sms
+from sp_user.models import User
+from django.http import HttpResponse, JsonResponse
 
 
 class RegisterView(View):
-	# 注册功能
-	def get(self, request):
-		# 使用form渲染页面
-		form = RegisterForm()
-		return render(request, "sp_user/reg.html", {"form": form})
+    """
+        # 注册
+    """
 
-	def post(self, request):
-		# 1. 接收数据
-		session_code = request.session.get('random_code')  # 提取出验证码
-		# 2. 处理数据
-		data = request.POST.dict()
-		data['session_code'] = session_code  # 强制转换成字典
-		form = RegisterForm(data)
-		# 3. 响应
-		if form.is_valid():
-			form.save()  # 全部合法上传数据库
-			return redirect(reverse("sp_user:login"))  # 注册成功跳转到登录页面
-		return render(request, "sp_user/reg.html", {"form": form})  # 注册失败跳转注册页面,提示错误信息
+    def get(self, request):
+        # 创建注册表单对象
+        register_form = RegisterForm()
+        return render(request, "sp_user/reg.html", {"form": register_form})
+
+    def post(self, request):
+        # 先将session中的验证码取出来
+        sid_verify_code = request.session.get('verify_code')
+        # 将 session 中的验证码 装到 request.POST 里面
+        data = request.POST.dict()
+        data['sid_verify_code'] = sid_verify_code
+
+        # 创建注册表单对象 验证验证码 交给form表单验证
+        register_form = RegisterForm(data)
+        # 判断是否验证成功
+        if register_form.is_valid():
+            # 成功
+            register_form.save()
+            # 跳转到登陆页面进行登陆
+            return redirect(reverse('sp_user:login'))
+        else:
+            return render(request, "sp_user/reg.html", {"form": register_form})
 
 
-# 登录功能
+# 登陆
+
 class LoginView(View):
-	def get(self, request):
-		login_form = LoginForm()
-		return render(request, "sp_user/login.html", {"form": login_form})
+    def get(self, request):
+        login_form = LoginForm()
+        return render(request, "sp_user/login.html", {"form": login_form})
 
-	def post(self, request):
-		# 1.接收数据
-		# 2.处理数据
-		l_form = LoginForm(request.POST)
-		# 3.响应
-		# 如果验证成功保存到session中
-		if l_form.is_valid():
-			user = l_form.cleaned_data.get("user")  # 从cleaned_data中拿到user
-			request.session['ID'] = user.pk  # 找到数据库中用户名id
-			request.session['phone'] = user.phone  # 找到数据库中用户名手机号
-			request.session.set_expiry(0)  # 有效期,在关闭浏览器失效，需要重登
-			return redirect(reverse('sp_user:center'))  # 跳转用户中心
-		return render(request, "sp_user/login.html", {"form": l_form})  # 验证失败,回到原来页面
+    def post(self, request):
+        # 创建表单对象, 传入数据校验
+        login_form = LoginForm(request.POST)
+        if login_form.is_valid():
+            # 数据验证成功 必须和数据库验证
+            data = login_form.cleaned_data
+            phone = data.get('phone')
+            password = data.get('password')
+            user = check_phone_pwd(phone, password)
+            if user:
+                # 验证成功 ,将用户登陆标识保存到session中
+                request.session.clear()  # 清空上个用户的信息
+                request.session['ID'] = user.pk
+                request.session['phone'] = user.phone
+                request.session.set_expiry(7 * 24 * 3600)
+
+                # 判断请求参数中是否有next
+                if request.GET.get("next"):
+                    return redirect(request.GET.get("next"))
+                else:
+                    # 跳转到用户中心
+                    return redirect(reverse("sp_user:center"))
+            else:
+                # 添加密码错误的信息
+                login_form.errors['password'] = ['密码输入错误!']
+        return render(request, "sp_user/login.html", {"form": login_form})
 
 
-# 个人中心功能
+# 视图函数
+# 调用 验证登陆的装饰器
+@check_is_login
+def center(request):
+    return render(request, "sp_user/member.html")
+
+
+# 个人中心 都需要验证是否曾经登陆
 class CenterView(BaseVerifyView):
-	def get(self, request):
-		phone = request.session.get('phone')  # 通过session获取电话号码
-		context = {
-			"phone": phone
-		}
-		return render(request, "sp_user/member.html", context)
 
-	def post(self, request):
-		pass
+    def get(self, request):
+        # # 判断session中是否有登陆标识 ID phone
+        # if request.session.get('ID') is None:
+        #     # 没有登陆 跳转到登陆页面
+        #     return redirect(reverse('sp_user:login'))
+        return render(request, "sp_user/member.html")
 
-
-# 收货地址功能
-class AddressView(BaseVerifyView):
-	def get(self, request):
-		pass
-
-	def post(self, request):
-		pass
+    def post(self, request):
+        pass
 
 
-# 个人资料功能
+# 修改个人资料
 class InfoView(BaseVerifyView):
-	def get(self, request):
-		user_id = request.session.get("ID")  # 从session中提取id
-		# 查询当前用户的所有信息
-		user = Users.objects.filter(pk=user_id).first()
-		context = {
-			"user": user
-		}
-		return render(request, "sp_user/infor.html", context)
+    def get(self, request):
+        # 查询出个人信息
+        # 获取人的id
+        id = request.session.get('ID')
+        # 查询数据库 orm
+        user = User.objects.filter(pk=id).values().first()
 
-	def post(self, request):
-		# 1. 接收数据
-		user_id = request.session.get("ID")
-		data = request.POST
-		file = request.FILES['head']
-		# 2. 处理数据
-		# 更新用户的头像
-		user = Users.objects.get(pk=user_id)
-		user.head = file
-		user.save()
-		# 3. 响应
-		return redirect(reverse("sp_user:center"))
+        # 渲染到页面
+        # 使用modelform
+        user_change_form = UserChangeForm(user)
+        return render(request, "sp_user/infor.html", {"form": user_change_form, "head": user['head']})
 
-# 个人资料修改
-
-# 个人中心头像上传
-def upload_head(request):
-	if request.method == "POST":
-		user_id = request.session.get("ID")  # 获取用户id
-		user = Users.objects.get(pk=user_id)  # 获取用户对象
-		user.head = request.FILES['file']  # 通过键file获取对应文件方向变化那你看了
-		user.save()
-		return JsonResponse({"error": 0})
-	else:
-		return JsonResponse({"error": 1})
+    # post 提交数据
+    def post(self, request):
+        # 需要修改当前登陆人这个对象
+        user = User.objects.filter(pk=request.session.get("ID")).first()
+        # form 保持数据的 需要传第二个参数 instance = 需要修改的实例对象
+        user_change_form = UserChangeForm(request.POST, instance=user)
+        if user_change_form.is_valid():
+            user_change_form.save()
+            return redirect(reverse('sp_user:center'))
+        else:
+            return render(request, "sp_user/infor.html", {"form": user_change_form})
 
 
-# 退出功能
-class LogoutView(View):
-	def get(self, request):
-		pass
+def sendMsg(request):
+    """
+        发送验证码
+        :param request:
+        :return:
+    """
+    # 接收到手机号码
+    tel = request.GET.get('phone', '0')
+    # 验证号码格式是否正确
+    r = re.compile('^1[3-9]\d{9}$')
+    res = re.search(r, tel)
+    # print(res)
+    if res is None:
+        return JsonResponse({"ok": 0, "msg": "手好号码格式错误!"})
 
-	def post(self, request):
-		pass
+    # 随机生成验证码
+    code = random.randint(1000, 9999)
+    # 保存到session中 ,等你验证的时候使用
+    request.session['verify_code'] = code
+    # 设置过期时间 redis
+    request.session.set_expiry(60)
+    print(code)
+    print("==================================")
+    # # 生成一个唯一的字符串
+    __business_id = uuid.uuid1()
+    # print(__business_id)
+    # 模板中的变量
+    # params = "{\"code\":\"%s\"}" % code
+    # rs = send_sms(__business_id, tel, "刘海", "SMS_142095014", params)
+    #
+    # rs = rs.decode("utf-8")
+    rs = {"Code": "OK"}
 
-
-# 验证码
-class SendCodeView(View):
-	def post(self, request):
-		# 1.接收数据
-		phone = request.POST.get("tel", "")  # 最好给个默认值
-		# 2.处理数据
-		import re
-		phone_re = re.compile("^1[3-9]\d{9}$")  # re是正则,设置手机号的正则规则
-		res = re.search(phone_re, phone)  # search查询手机号字符串(规则,对象)
-		# 如果手机号码为空,格式错误
-		if res is None:
-			return JsonResponse({"status": "400", "msg": "手机号码格式错误"})
-		# 若库中手机号存在
-		res = Users.objects.filter(phone=phone).exists()
-		if res:
-			return JsonResponse({"status": "400", "msg": "手机号码已经注册"})
-
-		# 生成随机验证码
-		import random
-		random_code = "".join([str(random.randint(0, 9)) for _ in range(4)])  # 0~9随机生成4个
-
-		# 开发自己模拟效果
-		print("----code : {}----".format(random_code))
-		# __business_id = uuid.uuid1()
-		# params = "{\"code\":\"%s\"}" % random_code
-		# rs = send_sms(__business_id, phone, "签名", "工单号", params)
-		# print(rs)
-
-		# 将生成的随机码也保存到session中,并且60秒过期
-		request.session['random_code'] = random_code
-		request.session.set_expiry(60)
-
-		# 3.响应 json , 告知 ajax是否发送成功
-		return JsonResponse({"status": "200"})
+    if rs['Code'] == "OK":
+        return JsonResponse({"ok": 1})
+    else:
+        return HttpResponse({"ok": 0, "msg": "短信发送失败"})

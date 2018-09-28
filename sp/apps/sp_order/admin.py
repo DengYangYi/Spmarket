@@ -1,3 +1,8 @@
 from django.contrib import admin
 
-# Register your models here.
+from sp_order.models import Transport
+
+
+@admin.register(Transport)
+class TransportAdmin(admin.ModelAdmin):
+    pass

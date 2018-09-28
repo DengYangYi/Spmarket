@@ -1,51 +1,52 @@
-import sys
-# from aliyunsdkdysmsapi.request.v20170525 import QuerySendDetailsRequest
-# import uuid
-# from aliyunsdkcore.http import method_type as MT
-# from aliyunsdkcore.http import format_type as FT
 import hashlib
-from aliyunsdkdysmsapi.request.v20170525 import SendSmsRequest
+
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.profile import region_provider
+from aliyunsdkdysmsapi.request.v20170525 import SendSmsRequest
 from django.conf import settings
-# 设置密码的加密
-from django.shortcuts import redirect
-from django.urls import reverse
+from django.shortcuts import redirect, reverse
+
+from sp_user.models import User
 
 
 def set_password(pwd):
-    token = settings.SECRET_KEY
-    password = token + pwd
-    h = hashlib.sha1(password.encode("utf-8"))
+    # 密码加密算法
+    key = settings.SECRET_KEY
+    token = key + str(pwd)
+    h = hashlib.sha1(token.encode('utf-8'))
     return h.hexdigest()
 
 
-# 登录验证装饰器
-def verify_login_required(func):
-    """:param func:  旧函数"""
-    # 定义一个新函数
-    def verify(request, *args, **kwargs):
-        # 如果session中没有保存id跳转注册
+def check_phone_pwd(phone, pwd):
+    # 验证用户名和密码 返回用户信息
+    return User.objects.filter(phone=phone, password=set_password(pwd)).first()
+
+
+# 装饰器 验证用户是否登陆
+def check_is_login(old_func):
+    # 新的方法 request 参数 里面有session
+    def new_func_verify(request, *args, **kwargs):
         if request.session.get("ID") is None:
-            login_url = settings.LOGIN_URL # 配置文件中获取登录的URL地址
-            return redirect(login_url)
-        # 否则返回被调用函数
+            # 没有登陆 跳转到登陆页面
+            return redirect(settings.URL_LOGIN)
         else:
-            return func(request, *args, **kwargs)
-    # 返回新函数，注意不加括号
-    return verify
+            # 已经登陆
+            return old_func(request, *args, **kwargs)
+    # 返回新函数
+    return new_func_verify
 
 
-# 注意：不要更改
-REGION = "cn-hangzhou"
-PRODUCT_NAME = "Dysmsapi"
-DOMAIN = "dysmsapi.aliyuncs.com"
 
-acs_client = AcsClient(settings.ACCESS_KEY_ID, settings.ACCESS_KEY_SECRET, REGION)
-region_provider.add_endpoint(PRODUCT_NAME, REGION, DOMAIN)
-
-
+# 阿里自带发送短信的方法
 def send_sms(business_id, phone_numbers, sign_name, template_code, template_param=None):
+    # 注意：不要更改
+    REGION = "cn-hangzhou"
+    PRODUCT_NAME = "Dysmsapi"
+    DOMAIN = "dysmsapi.aliyuncs.com"
+
+    acs_client = AcsClient(settings.ACCESS_KEY_ID, settings.ACCESS_KEY_SECRET, REGION)
+    region_provider.add_endpoint(PRODUCT_NAME, REGION, DOMAIN)
+
     smsRequest = SendSmsRequest.SendSmsRequest()
     # 申请的短信模板编码,必填
     smsRequest.set_TemplateCode(template_code)
@@ -75,4 +76,3 @@ def send_sms(business_id, phone_numbers, sign_name, template_code, template_para
     # TODO 业务处理
 
     return smsResponse
-
