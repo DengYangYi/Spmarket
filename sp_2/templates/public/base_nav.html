@@ -1,0 +1,35 @@
+{% extends 'public/base.html' %}
+{% load static %}
+
+{% block meta_js %}
+    <script src="{% static 'js/popup.mini.js' %}"></script>
+{% endblock %}
+
+{% block content_nav %}
+    <header data-am-widget="header" class="am-header am-header-default sq-head ">
+        <h1 class="am-header-title">
+            <a href="" class="">个人中心</a>
+        </h1>
+    </header>
+{% endblock %}
+
+
+{% block content_main %}
+
+{% endblock %}
+
+{% block footer %}
+    <!--底部-->
+    {% include 'public/footer.html' %}
+{% endblock %}
+
+{% block footer_js %}
+    <script type='text/javascript'>
+        (function () {
+            new PopUp_api({el: '.index-qd', html: '.qd-box'});
+        })()
+    </script>
+
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <script src="{% static 'js/amazeui.min.js' %}"></script>
+{% endblock %}

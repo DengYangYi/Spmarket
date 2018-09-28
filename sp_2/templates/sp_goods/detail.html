@@ -1,0 +1,181 @@
+{% extends 'public/base.html' %}
+{% load static %}
+{% block meta_title %}超市{% endblock %}
+{% block meta_js %}
+    <script>
+        function changeImage() {
+            document.getElementById("imgflag").src = "images/redherat.png";
+        }
+    </script>
+
+    <style>
+        .am-slider-default .am-control-nav {
+            text-align: center;
+        }
+
+        .am-slider-default .am-control-nav li a.am-active {
+            background: #cb2527;
+        }
+
+        .am-slider-default .am-control-nav li a {
+            border: 0;
+            width: 10px;
+            height: 10px;
+        }
+    </style>
+{% endblock %}
+
+
+{% block content_nav %}
+    <header data-am-widget="header" class="am-header am-header-default sq-head ">
+        <div class="am-header-left am-header-nav">
+            <a href="javascript:history.back()" class="">
+                <i class="am-icon-chevron-left"></i>
+            </a>
+        </div>
+        <h1 class="am-header-title">
+            <a href="" class="">商品详情</a>
+        </h1>
+    </header>
+    <div style="height: 49px;"></div>
+{% endblock %}
+
+{% block content_main %}
+    <!--图片轮换-->
+    <div class="am-slider am-slider-default" data-am-flexslider id="demo-slider-0">
+        <ul class="am-slides">
+            {% for gallery in goodsSku.gallery_set.all %}
+                <li><img src="{{ MEDIA_URL }}{{ gallery.img_url }}"/></li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="detal-info" style="position: relative; width: 100%;">
+        <p>{{ goodsSku.goods_spu.spu_name }}{{ goodsSku.sku_name }}</p>
+        <h2>商城价：<span>￥{{ goodsSku.price }}</span></h2>
+        <div class="heart">
+            <img src="{% static 'images/herat.png' %}" width="25" id="imgflag" onclick="changeImage()"/>
+            <p>收藏</p>
+        </div>
+    </div>
+    <div class="d-amount">
+        <h4>数量：</h4>
+        <div class="d-stock">
+            <a class="decrease">-</a>
+            <input id="num" readonly="" class="text_box" name="" type="text" value="1">
+            <input id="cart_count" type="hidden" value="1">
+            <a class="increase">+</a>
+            <span id="dprice" class="price" style="display:none"> 36</span>
+        </div>
+        <h4>{{ goodsSku.unit }}</h4>
+    </div>
+    <div style="background: #eee; height: 10px;"></div>
+    <div class="am-tabs detail-list" data-am-tabs>
+        <ul class="am-tabs-nav am-nav am-nav-tabs">
+            <li class="am-active"><a href="#tab1">商品详情</a></li>
+            <li><a href="#tab2">商品评论</a></li>
+        </ul>
+
+        <div class="am-tabs-bd">
+            <div class="am-tab-panel am-fade am-in am-active detail " id="tab1">
+                {{ goodsSku.goods_spu.content|safe }}
+            </div>
+            <div class="am-tab-panel am-fade detail " id="tab2">
+                <ul class="comment-list">
+                    <li class="current"><a href="">全部</a></li>
+                    <li><a href="">好评（20）</a></li>
+                    <li><a href="">中评（5）</a></li>
+                    <li><a href="">差评（0）</a></li>
+                </ul>
+                <ul class="comment-pic">
+                    <li>
+                        <div class="tit">
+                            <img src="images/tx.png" class="tx"/>
+                            <span>songke2014</span>
+                            <i> [2016-01-01]</i>
+                        </div>
+                        <div class="comment-con">
+                            买了些给家人，都说不错！
+                        </div>
+                    </li>
+                    <li>
+                        <div class="tit">
+                            <img src="images/tx.png" class="tx"/>
+                            <span>songke2014</span>
+                            <i> [2016-01-01]</i>
+                        </div>
+                        <div class="comment-con">
+                            买了些给家人，都说不错！
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+
+{% block footer %}
+    <!--底部-->
+    <div style=" height: 55px;"></div>
+    <ul class="fix-shopping">
+        <li><a href="#" class="join" sku-id="{{ goodsSku.pk }}">加入购物车</a></li>
+        <li><a href="{% url 'sp_cart:index' %}" class="imm-buy">立即购买</a></li>
+    </ul>
+{% endblock %}
+
+
+{% block footer_js %}
+    {% csrf_token %}
+    <script>
+        //购物数量加减
+        $(function () {
+            $('.increase').click(function () {
+                var self = $(this);
+                var current_num = parseInt(self.siblings('input').val());
+                current_num += 1;
+                self.siblings('input').val(current_num);
+
+            });
+            $('.decrease').click(function () {
+                var self = $(this);
+                var current_num = parseInt(self.siblings('input').val());
+                if (current_num > 1) {
+                    current_num -= 1;
+                    self.siblings('input').val(current_num);
+                }
+            });
+
+
+            // 在加入购物车按钮上绑定一个点击事件
+            $(".join").on("click",function () {
+                //准备数据 商品id 和 数量
+                var sku_id = $(this).attr("sku-id");
+                var count = $("#cart_count").val();
+                {#console.debug(sku_id,count);#}
+                //发送ajax请求
+                var data = {
+                    "sku_id":sku_id,
+                    "count":count,
+                    "csrfmiddlewaretoken":"{{ csrf_token }}",
+                    {#"csrfmiddlewaretoken":$("input[name='csrfmiddlewaretoken']").val()#}
+                };
+                $.post("{% url 'sp_cart:addCart' %}",data,function(data){
+                    console.debug(data);
+                    //判断错误的类型
+                    if(data.error == 1){
+                        //说明没有登陆，请登陆
+                        var rs = confirm("没有登陆，是否跳转到登陆页面》？");
+                        if (rs){
+                            location.href = "{% url 'sp_user:login' %}?next={% url 'sp_goods:detail' goodsSku.pk %}";
+                        }
+                    }else if(data.error == 0){
+                        alert("添加成功！");
+                    }else {
+                        alert(data.msg);
+                    }
+                })
+            });
+        })
+    </script>
+{% endblock %}

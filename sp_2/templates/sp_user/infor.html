@@ -1,0 +1,83 @@
+{% extends 'public/base.html' %}
+{% load static %}
+
+{% block meta_css %}
+    <link href="{% static 'css/check.css' %}" rel="stylesheet" type="text/css"/>
+{% endblock %}
+
+{% block content_nav %}
+    <header data-am-widget="header" class="am-header am-header-default sq-head ">
+        <div class="am-header-left am-header-nav">
+            <a href="javascript:history.back()" class="">
+                <i class="am-icon-chevron-left"></i>
+            </a>
+        </div>
+        <h1 class="am-header-title">
+            <a href="" class="">个人资料</a>
+        </h1>
+    </header>
+{% endblock %}
+
+{% block content_main %}
+    <div style="height: 49px;"></div>
+    <form action="" method="post">
+        {% csrf_token %}
+        <ul class="safty1">
+            <li>
+                <a href="">
+                    <i style="margin-top: 25px;">头像</i>
+                    <div class="infor-pic">
+                        <img src="{{ MEDIA_URL }}{{ head }}"/>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <i>昵称</i>
+                {{ form.nickname }}
+            </li>
+            <li>
+                <i class="infor-tele">性别
+                    <label class="am-radio-inline">
+                        {{ form.gender.0 }}
+                    </label>
+                    <label class="am-radio-inline">
+                        {{ form.gender.1 }}
+                    </label>
+                    <label class="am-radio-inline">
+                        {{ form.gender.2 }}
+                    </label>
+                </i>
+            </li>
+            <li>
+                <i>生日</i>
+                {{ form.birthday }}
+            </li>
+        </ul>
+        <div style="height: 10px; background: #efefef;"></div>
+        <ul class="safty1">
+            <li>
+                <i>学校</i>
+                {{ form.school_name }}
+            </li>
+            <li>
+                <i>位置</i>
+                {{ form.address }}
+            </li>
+            <li>
+                <i>故乡</i>
+                {{ form.hometown }}
+            </li>
+            <li>
+                <i>手机</i>
+                {{ form.phone }}
+            </li>
+        </ul>
+        <button type="submit" class="am-btn am-btn-warning">橙色按钮</button>
+        <div style="height: 49px;"></div>
+    </form>
+{% endblock %}
+
+{% block footer_js %}
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <script src="{% static 'js/amazeui.min.js' %}"></script>
+{% endblock %}

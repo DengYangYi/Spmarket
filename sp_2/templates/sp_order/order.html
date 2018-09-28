@@ -1,0 +1,61 @@
+{% extends 'public/base.html' %}
+{% load static %}
+{% block content_nav %}
+    <header data-am-widget="header" class="am-header am-header-default sq-head ">
+        <div class="am-header-left am-header-nav">
+            <a href="javascript:history.back()" class="">
+                <i class="am-icon-chevron-left"></i>
+            </a>
+        </div>
+        <h1 class="am-header-title">
+            <a href="" class="">确认支付</a>
+        </h1>
+    </header>
+    <div style="height: 49px;"></div>
+{% endblock %}
+
+{% block content_main %}
+    <h5 class="order-tit">收货人信息</h5>
+    <div class="order-name">
+        <p class="order-tele">{{ orderinfo.receiver }}&nbsp;&nbsp;&nbsp;{{ orderinfo.receiver_phone }}</p>
+        <p class="order-add">{{ orderinfo.address }}</p>
+        <i class="am-icon-angle-right"></i>
+    </div>
+    <div style="background: #eee; height: 10px;"></div>
+    <h5 class="order-tit">订单信息</h5>
+    <ul class="shopcart-list" style="padding-bottom: 0; margin-top: 0;">
+        {% for ordergd in orderGoods %}
+            <li>
+                <img src="{{ MEDIA_URL }}{{ ordergd.goods_sku.logo }}" class="shop-pic"/>
+                <div class="order-mid">
+                    <div class="tit">{{ ordergd.goods_sku.goods_spu.spu_name }}{{ ordergd.goods_sku.sku_name }}</div>
+                    <div class="order-price">￥{{ ordergd.price }} <i>X{{ ordergd.count }}</i></div>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+    <ul class="order-infor">
+        <li class="order-infor-first">
+            <span>商品总计：</span>
+            <i>￥{{ orderinfo.order_money }}</i>
+        </li>
+        <li class="order-infor-first">
+            <span>运费：{{ orderinfo.transport }}</span>
+            <i>{{ orderinfo.transport_price }}</i>
+        </li>
+    </ul>
+    <div style="background: #eee; height: 10px;"></div>
+    <textarea placeholder="备注说明" class="bz-infor"></textarea>
+    <div style="background: #eee; height: 10px;"></div>
+    <div style="height: 55px;"></div>
+    <div class="shop-fix">
+        <div class="order-text">
+            应付总额：<span>￥{{ total_money }}</span>
+        </div>
+        <a href="pay.html" class="js-btn">提交订单</a>
+    </div>
+{% endblock %}
+
+{% block footer %}
+    {% include 'public/footer.html' %}
+{% endblock %}

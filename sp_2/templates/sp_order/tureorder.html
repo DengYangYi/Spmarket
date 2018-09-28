@@ -1,0 +1,120 @@
+{% extends 'public/base.html' %}
+{% load static %}
+
+{% block content_nav %}
+    <header data-am-widget="header" class="am-header am-header-default sq-head ">
+        <div class="am-header-left am-header-nav">
+            <a href="javascript:history.back()" class="">
+                <i class="am-icon-chevron-left"></i>
+            </a>
+        </div>
+        <h1 class="am-header-title">
+            <a href="" class="">确认订单</a>
+        </h1>
+    </header>
+    <div style="height: 49px;"></div>
+{% endblock %}
+
+{% block content_main %}
+    <form action="" method="post" id="orderForm">
+    {% csrf_token %}
+    {% if address %}
+        <div class="order-name">
+            <a href="{% url 'sp_order:address_list' %}">
+                <p class="order-tele">{{ address.username }}&nbsp;&nbsp;&nbsp;{{ address.phone }}</p>
+                <p class="order-add">
+                    {{ address.hcity }}{{ address.hproper }}{{ address.harea }}{{ address.brief }}
+                </p>
+                <input type="hidden" name="add_id" id="add_id" value="{{ address.pk }}">
+            </a>
+            <i class="am-icon-angle-right"></i>
+        </div>
+    {% else %}
+        <div class="add-address">
+            <a href="{% url 'sp_order:address_add' %}">+新建收货地址</a>
+            <i class="am-icon-angle-right"></i>
+        </div>
+    {% endif %}
+
+
+    <div style="background: #eee; height: 10px;"></div>
+    <ul class="shopcart-list" style="padding-bottom: 0;">
+        {% for goods in goodsList %}
+            <li>
+                <input type="hidden" name="sku_ids" value="{{ goods.pk }}">
+                <img src="{{ MEDIA_URL }}{{ goods.logo }}" class="shop-pic"/>
+                <div class="order-mid">
+                    <div class="tit">{{ goods.goods_spu.sup_name }}{{ goods.sku_name }}</div>
+                    <div class="order-price">￥{{ goods.price }} <i>X{{ goods.count }}</i></div>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+    <ul class="order-infor">
+        <li class="order-infor-first">
+            <span>商品总计：</span>
+            <i>￥</i><i id="total_sku_price">{{ total_sku_price }}</i>
+        </li>
+        <li class="order-infor-first">
+            <span>配送方式：</span>
+            <i>
+                <select name="transport" id="transport">
+                    {% for trans in transList %}
+                        <option value="{{ trans.pk }}"
+                                data-value="{{ trans.money }}">{{ trans.name }}-{{ trans.money }}</option>
+                    {% endfor %}
+                </select>
+            </i>
+        </li>
+    </ul>
+    <div style="background: #eee; height: 10px;"></div>
+    <textarea placeholder="备注说明" class="bz-infor"></textarea>
+    <div style="background: #eee; height: 10px;"></div>
+    <div style="height: 55px;"></div>
+    <div class="shop-fix">
+        <div class="order-text">
+            应付总额：￥<span id="total_price">{{ total_price }}</span>
+        </div>
+        <a href="javascript:;" class="js-btn">提交订单</a>
+    </div>
+    </form>
+{% endblock %}
+
+
+{% block footer %}
+    {% include 'public/footer.html' %}
+{% endblock %}
+
+{% block footer_js %}
+    <script>
+        $(function () {
+            //运费的计算
+            $('#transport').on("change", function () {
+                var option = $(this).find(":selected");
+                var trans_price = option.attr('data-value');
+                var total_sku_price = $('#total_sku_price').text();
+                var total = parseFloat(trans_price) + parseFloat(total_sku_price);
+                $("#total_price").text(total.toFixed(2));
+            });
+
+            //提交订单
+            $(".js-btn").on("click",function(){
+                if($("#add_id").length == 0){
+                    alert("请选择收货地址!");
+                    return;
+                }
+                //表单数据
+                var request_data = $("#orderForm").serialize();
+                //发送ajax请求
+                $.post("{% url 'sp_order:display' %}",request_data,function(data){
+                    if(data.error == 0){
+                        alert("下单成功");
+                        location.href = "{% url 'sp_order:pay' %}?order_sn=" + data.order_sn;
+                    }else {
+                        alert("下单失败");
+                    }
+                });
+            })
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends 'public/base.html' %}
+{% load static %}
+{% block content_nav %}
+    <header data-am-widget="header" class="am-header am-header-default sq-head ">
+        <div class="am-header-left am-header-nav">
+            <a href="{{ request.session.bak_url }}" class="">
+                <i class="am-icon-chevron-left"></i>
+            </a>
+        </div>
+        <h1 class="am-header-title">
+            <a href="javascript:;" class="">管理收货地址</a>
+        </h1>
+        <div class="am-header-right am-header-nav">
+            <a href="{% url 'sp_order:address_add' %}" class="">
+                <i class="am-icon-plus"></i>
+            </a>
+        </div>
+    </header>
+    <div style="height: 49px;"></div>
+{% endblock %}
+
+{% block content_main %}
+    <ul class="address-list">
+        {% for add in addressList %}
+        <li {% if add.isDefault %}class="curr"{% endif %}>
+            <p>收货人：{{ add.username }}&nbsp;&nbsp;{{ add.phone }}</p>
+            <p class="order-add1">收货地址：{{ add.hcity }}{{ add.hproper }}{{ add.harea }}{{ add.brief }}</p>
+            <hr/>
+            <div class="address-cz">
+                <label class="am-radio am-warning">
+                    <input type="radio" addid="{{ add.pk }}" name="radio3" value="" data-am-ucheck {% if add.isDefault %}checked{% endif %}> 设为默认
+                </label>
+                <a href=""><img src="{% static 'images/bj.png' %}" width="18"/>&nbsp;编辑</a>
+                <a href="">删除</a>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+{% endblock %}
+
+{% block footer_js %}
+    <script>
+        $(function () {
+            $(".address-list").find(":radio") .on('change',function () {
+                var add_id = $(this).attr("addid");
+                var data = {
+                    "add_id":add_id,
+                    "csrfmiddlewaretoken":"{{ csrf_token }}",
+                };
+                var that = this;
+                $.post("{% url 'sp_order:address_list' %}",data,function(data){
+                    if(data.ok == 0){
+                        //将所有的curr清除
+                        $(".address-list").find("li").removeClass('curr');
+                        //当前li标签上加上curr
+                        $(that).parents('li').addClass('curr');
+                    }
+                })
+            });
+        });
+    </script>
+{% endblock %}
