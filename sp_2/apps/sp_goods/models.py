@@ -59,7 +59,7 @@ class GoodsSPU(BaseModel):
         return self.spu_name
 
     class Meta:
-        verbose_name = "商品SPU"
+        verbose_name = "商品SPU管理"
         verbose_name_plural = verbose_name
 
 

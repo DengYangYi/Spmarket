@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from sp_goods.models import Category, Unit, GoodsSPU, GoodsSKU, Gallery
 
+admin.site.site_header = "电商app管理"
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
